@@ -1,0 +1,5 @@
+jupyterlab
+jupyter
+tifffile
+numpy
+matplotlib
