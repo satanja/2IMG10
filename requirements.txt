@@ -3,3 +3,4 @@ jupyter
 tifffile
 numpy
 matplotlib
+opencv-python
