@@ -7,7 +7,6 @@ use geometry::{smallest_disk, Disk};
 use reeb_graph::ReebGraph;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use voronoi::DCEL;
 
 #[derive(Debug, StructOpt)]
 struct Opt {
@@ -24,6 +23,4 @@ struct Opt {
     input_dir: PathBuf,
 }
 
-fn main() {
-        
-}
+fn main() {}

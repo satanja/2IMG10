@@ -13,7 +13,6 @@ impl NetworkEdge {
 }
 
 pub struct Graph {
-    len: usize,
     vertices: HashMap<(u32, u32), usize>,
     adj: Vec<Vec<NetworkEdge>>,
 }
@@ -21,7 +20,6 @@ pub struct Graph {
 impl Graph {
     pub fn new() -> Graph {
         Graph {
-            len: 0,
             vertices: HashMap::new(),
             adj: Vec::new(),
         }
@@ -33,9 +31,8 @@ impl Graph {
 
     fn add_vertex(&mut self, vertex: &(u32, u32)) {
         if !self.vertices.contains_key(vertex) {
-            self.vertices.insert(vertex.clone(), self.len);
+            self.vertices.insert(vertex.clone(), self.vertices());
             self.adj.push(Vec::new());
-            self.len += 1;
         }
     }
 
@@ -72,7 +69,6 @@ impl Graph {
                     if j < singles.len() && i == *singles[j].1 {
                         j += 1;
                     } else {
-                        
                         let filtered: Vec<_> = self.adj[i]
                             .clone()
                             .into_iter()
@@ -99,7 +95,6 @@ impl Graph {
 
                 self.vertices = new_vertices;
                 self.adj = new_adj;
-                self.len = self.vertices.len();
             }
 
             if !reduced {
@@ -119,7 +114,7 @@ impl Graph {
 
     /// Returns the number of vertices in the graph
     pub fn vertices(&self) -> usize {
-        self.len
+        self.vertices.len()
     }
 
     /// Returns the number of edges in the graph
