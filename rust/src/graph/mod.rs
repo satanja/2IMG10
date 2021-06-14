@@ -1,35 +1,36 @@
-use std::collections::{HashMap, HashSet};
+use fxhash::FxHashMap;
+use fxhash::FxHashSet;
 
 #[derive(Clone)]
 pub struct NetworkEdge {
-    pos: (u32, u32),
+    pos: (i32, i32),
     delta: f64,
 }
 
 impl NetworkEdge {
-    pub fn new(pos: (u32, u32), delta: f64) -> NetworkEdge {
+    pub fn new(pos: (i32, i32), delta: f64) -> NetworkEdge {
         NetworkEdge { pos, delta }
     }
 }
 
 pub struct Graph {
-    vertices: HashMap<(u32, u32), usize>,
+    vertices: FxHashMap<(i32, i32), usize>,
     adj: Vec<Vec<NetworkEdge>>,
 }
 
 impl Graph {
     pub fn new() -> Graph {
         Graph {
-            vertices: HashMap::new(),
+            vertices: FxHashMap::default(),
             adj: Vec::new(),
         }
     }
 
-    fn get_index(&self, vertex: &(u32, u32)) -> usize {
+    fn get_index(&self, vertex: &(i32, i32)) -> usize {
         *self.vertices.get(vertex).unwrap()
     }
 
-    fn add_vertex(&mut self, vertex: &(u32, u32)) {
+    fn add_vertex(&mut self, vertex: &(i32, i32)) {
         if !self.vertices.contains_key(vertex) {
             self.vertices.insert(vertex.clone(), self.vertices());
             self.adj.push(Vec::new());
@@ -37,7 +38,7 @@ impl Graph {
     }
 
     /// Inserts an edge into the graph. Also inserts vertices if they were not present in the graph.
-    pub fn add_edge(&mut self, from: (u32, u32), to: (u32, u32), delta: f64) {
+    pub fn add_edge(&mut self, from: (i32, i32), to: (i32, i32), delta: f64) {
         self.add_vertex(&from);
         self.add_vertex(&to);
 
@@ -61,7 +62,7 @@ impl Graph {
             if singles.len() > 0 {
                 reduced = true;
                 singles.sort_by(|(_, a), (_, b)| a.cmp(b));
-                let set: HashSet<_> = singles.clone().into_iter().map(|(pos, _)| *pos).collect();
+                let set: FxHashSet<_> = singles.clone().into_iter().map(|(pos, _)| *pos).collect();
                 let mut j = 0;
 
                 let mut new_adj = Vec::new();
@@ -86,7 +87,7 @@ impl Graph {
                     .collect();
                 good_vertices.sort_by(|(_, a), (_, b)| a.cmp(b));
 
-                let mut new_vertices = HashMap::new();
+                let mut new_vertices = FxHashMap::default();
                 let mut n = 0;
                 for (pos, _) in good_vertices {
                     new_vertices.insert(*pos, n);
@@ -104,7 +105,7 @@ impl Graph {
     }
 
     /// Gets the list of edges from `vertex`
-    pub fn get_edges(&self, vertex: &(u32, u32)) -> Option<&Vec<NetworkEdge>> {
+    pub fn get_edges(&self, vertex: &(i32, i32)) -> Option<&Vec<NetworkEdge>> {
         if let Some(index) = self.vertices.get(vertex) {
             Some(&self.adj[*index])
         } else {

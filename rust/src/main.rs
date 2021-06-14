@@ -15,7 +15,7 @@ struct Opt {
 
     #[structopt(short, long, default_value = "0")]
     start_time: usize,
-    
+
     #[structopt(short, long, default_value = "662")]
     end_time: usize,
 
@@ -23,4 +23,28 @@ struct Opt {
     input_dir: PathBuf,
 }
 
-fn main() {}
+fn main() {
+    let opt = Opt::from_args();
+
+    let delta = opt.delta;
+    let input_dir = opt.input_dir;
+
+    let input_paths = std::fs::read_dir(input_dir.clone()).unwrap();
+    
+    let networks: Vec<_> = input_paths
+        .into_iter()
+        .filter(|path| match path {
+            Ok(dir_entry) => {
+                let pb = dir_entry.path();
+                match pb.extension() {
+                    Some(extension) => extension == "txt",
+                    _ => false,
+                }
+            }
+            _ => false,
+        })
+        .map(|path| io::read_network(delta, &path.unwrap().path()).unwrap())
+        .collect();
+
+    println!("hello world!");
+}
