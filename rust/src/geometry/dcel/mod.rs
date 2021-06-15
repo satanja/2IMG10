@@ -527,3 +527,24 @@ pub fn make_line_segments(dcel: &DCEL) -> Vec<Segment> {
     }
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unchecked_building_dcel() {
+        let mut dcel = DCEL::new();
+        dcel.add_edge_unchecked(&(0, 0), &(1, 0));
+        dcel.add_edge_unchecked(&(0, 0), &(0, 1));
+        dcel.add_edge_unchecked(&(0, 1), &(1, 1));
+        dcel.add_edge_unchecked(&(1, 0), &(2, 0));
+        dcel.add_edge_unchecked(&(1, 0), &(1, 1));
+        dcel.add_edge_unchecked(&(1, 1), &(2, 1));
+        dcel.add_edge_unchecked(&(2, 0), &(2, 1));
+
+        dcel.build();
+        dcel.add_faces();
+        assert_eq!(dcel.make_polygons().len(), 2);
+    }
+}

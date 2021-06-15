@@ -128,6 +128,7 @@ impl Graph {
 
     pub fn polygons(&self) -> Vec<Polygon> {
         let mut dcel = DCEL::new();
+        todo!("Only add each edge once!");
         for (vertex, index) in &self.vertices {
             for edge in &self.adj[*index] {
                 let from = (vertex.0, vertex.1);
