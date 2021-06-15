@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fmt;
 mod beachline;
 mod point;
