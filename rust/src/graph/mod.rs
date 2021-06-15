@@ -1,6 +1,9 @@
 use fxhash::FxHashMap;
 use fxhash::FxHashSet;
 
+use crate::geometry::Polygon;
+use crate::geometry::DCEL;
+
 #[derive(Clone)]
 pub struct NetworkEdge {
     pos: (i32, i32),
@@ -121,6 +124,22 @@ impl Graph {
     /// Returns the number of edges in the graph
     pub fn edges(&self) -> usize {
         self.adj.iter().fold(0, |acc, edges| acc + edges.len()) / 2
+    }
+
+    pub fn polygons(&self) -> Vec<Polygon> {
+        println!("{}", self.vertices());
+        println!("{}", self.edges());
+
+        let mut dcel = DCEL::new();
+        for (vertex, index) in &self.vertices {
+            for edge in &self.adj[*index] {
+                let from = (vertex.0 as f64, vertex.1 as f64);
+                let to = (edge.pos.0 as f64, edge.pos.1 as f64);
+
+                dcel.add_line(&from, &to);
+            }
+        }
+        dcel.make_polygons()
     }
 }
 

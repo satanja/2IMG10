@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use fxhash::FxHashMap;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 #[derive(Debug)]
@@ -14,14 +14,14 @@ impl CriticalPoint {
 
 #[derive(Debug)]
 pub struct ReebGraph {
-    slices: HashMap<usize, HashMap<CriticalPoint, Vec<CriticalPoint>>>,
+    slices: FxHashMap<usize, FxHashMap<CriticalPoint, Vec<CriticalPoint>>>,
 }
 
 impl ReebGraph {
     /// Constructs a new Reeb graph given a root node
     pub fn new(root: &CriticalPoint) -> ReebGraph {
-        let mut root_map = HashMap::new();
-        let mut edges = HashMap::new();
+        let mut root_map = FxHashMap::default();
+        let mut edges = FxHashMap::default();
         edges.insert(root.clone(), Vec::new());
         root_map.insert(root.value, edges);
         ReebGraph { slices: root_map }
@@ -48,7 +48,7 @@ impl ReebGraph {
                 }
             }
         } else {
-            let mut edge_map = HashMap::new();
+            let mut edge_map = FxHashMap::default();
             edge_map.insert(point.clone(), Vec::new());
             self.slices.insert(point.value, edge_map);
         }

@@ -30,7 +30,7 @@ fn main() {
     let input_dir = opt.input_dir;
 
     let input_paths = std::fs::read_dir(input_dir.clone()).unwrap();
-    
+
     let networks: Vec<_> = input_paths
         .into_iter()
         .filter(|path| match path {
@@ -45,6 +45,8 @@ fn main() {
         })
         .map(|path| io::read_network(delta, &path.unwrap().path()).unwrap())
         .collect();
+
+    let island_stack: Vec<_> = networks.into_iter().map(|g| g.polygons()).collect();
 
     println!("hello world!");
 }

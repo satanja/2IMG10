@@ -1,10 +1,12 @@
 mod disk;
 mod line;
 mod polygon;
+mod dcel;
 
 use line::Line;
 pub use disk::Disk;
 pub use polygon::Polygon;
+pub use dcel::DCEL;
 
 fn dist(a: &(f64, f64), b: &(f64, f64)) -> f64 {
     let dx = a.0 - b.0;
