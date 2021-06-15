@@ -24,6 +24,10 @@ impl Disk {
         self.radius
     }
 
+    pub fn centroid(&self) -> (f64, f64) {
+        self.center
+    }
+
     // pub fn add_point(&mut self, point: (f64, f64)) {
     //     self.points.push(point);
     // }
