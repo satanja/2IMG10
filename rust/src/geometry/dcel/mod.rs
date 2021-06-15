@@ -6,6 +6,7 @@ mod point;
 mod util;
 
 use crate::geometry::Polygon;
+use fxhash::FxHashMap;
 use geo::point;
 use point::Point;
 use util::{segment_intersection, Segment};
@@ -15,11 +16,14 @@ const NIL: usize = !0;
 /// Doubly Connected Edge List representation of a subdivision of the plane.
 pub struct DCEL {
     /// Vertices
-    pub vertices: Vec<Vertex>,
+    vertices: Vec<Vertex>,
     /// Halfedges
-    pub halfedges: Vec<HalfEdge>,
+    halfedges: Vec<HalfEdge>,
     /// Faces
-    pub faces: Vec<Face>,
+    faces: Vec<Face>,
+
+    map: FxHashMap<(i32, i32), usize>,
+    adj: Vec<Vec<usize>>,
 }
 
 impl DCEL {
@@ -29,6 +33,8 @@ impl DCEL {
             vertices: vec![],
             halfedges: vec![],
             faces: vec![],
+            map: FxHashMap::default(),
+            adj: Vec::new(),
         }
     }
 
@@ -112,6 +118,93 @@ impl DCEL {
             self.remove_edge(edge);
         }
         self.vertices[vertex].alive = false;
+    }
+
+    pub fn add_edge_unchecked(&mut self, a: &(i32, i32), b: &(i32, i32)) {
+
+        let twins = self.add_twins();
+        if !self.map.contains_key(a) {
+            self.map.insert(*a, self.vertices.len());
+            let v = Vertex {
+                coordinates: Point::new(a.0 as f64, a.1 as f64),
+                incident_edge: twins.0,
+                alive: true,
+            };
+            self.vertices.push(v);
+            self.adj.push(Vec::new());
+        }
+
+        if !self.map.contains_key(b) {
+            self.map.insert(*b, self.vertices.len());
+            let v = Vertex {
+                coordinates: Point::new(b.0 as f64, b.1 as f64),
+                incident_edge: twins.1,
+                alive: true,
+            };
+            self.vertices.push(v);
+            self.adj.push(Vec::new());
+        }
+        
+        let i = *self.map.get(a).unwrap();
+        let j = *self.map.get(b).unwrap();
+
+        self.adj[i].push(twins.1);
+        self.adj[j].push(twins.0);
+        
+        self.halfedges[twins.0].origin = i;
+        self.halfedges[twins.1].origin = j;
+    }
+
+    pub fn build(&mut self) {
+        for i in 0..self.vertices.len() {
+            let c = &self.vertices[i];
+
+            let mut sorted = self.adj[i].clone();
+            sorted.sort_by(|u, v| {
+                let e1 = &self.halfedges[*u];
+                let e2 = &self.halfedges[*v];
+
+                let p = &self.vertices[e1.origin];
+                let q = &self.vertices[e2.origin];
+
+                let a = p.coordinates - c.coordinates;
+                let b = q.coordinates - c.coordinates;
+
+                let theta1 = if a.x() < 0. {
+                    (a.y() / a.x()).atan() + std::f64::consts::PI
+                } else {
+                    (a.y() / a.x()).atan()
+                };
+
+                let theta2 = if b.x() < 0. {
+                    (b.y() / b.x()).atan() + std::f64::consts::PI
+                } else {
+                    (b.y() / b.x()).atan()
+                };
+
+                theta1.partial_cmp(&theta2).unwrap()
+            });
+
+            for j in 0..sorted.len() - 1 {
+                let a = sorted[j];
+                let b = sorted[j + 1];
+                let e1 = self.halfedges[a].twin;
+
+                self.halfedges[e1].next = b;
+                self.halfedges[b].prev = e1;
+            }
+
+            let last = sorted[sorted.len() - 1];
+            let e1 = self.halfedges[last].twin;
+            self.halfedges[e1].next = sorted[0];
+            self.halfedges[sorted[0]].prev = e1;
+        }
+
+        for e in &self.halfedges {
+            if e.next == NIL {
+                println!("{}", e.origin);
+            }
+        }
     }
 
     // does not handle the case where line goes through dcel vertex
@@ -299,11 +392,11 @@ impl fmt::Debug for DCEL {
 /// A vertex of a DCEL
 pub struct Vertex {
     /// (x, y) coordinates
-    pub coordinates: Point,
+    coordinates: Point,
     /// Some halfedge having this vertex as the origin
-    pub incident_edge: usize, // index of halfedge
+    incident_edge: usize, // index of halfedge
     /// False if the vertex has been deleted
-    pub alive: bool,
+    alive: bool,
 }
 
 impl fmt::Debug for Vertex {

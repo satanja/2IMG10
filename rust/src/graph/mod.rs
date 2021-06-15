@@ -130,12 +130,14 @@ impl Graph {
         let mut dcel = DCEL::new();
         for (vertex, index) in &self.vertices {
             for edge in &self.adj[*index] {
-                let from = (vertex.0 as f64, vertex.1 as f64);
-                let to = (edge.pos.0 as f64, edge.pos.1 as f64);
+                let from = (vertex.0, vertex.1);
+                let to = (edge.pos.0, edge.pos.1);
 
-                dcel.add_line(&from, &to);
+                dcel.add_edge_unchecked(&from, &to);
             }
         }
+        dcel.build();
+        dcel.add_faces();
         dcel.make_polygons()
     }
 }
