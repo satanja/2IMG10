@@ -50,7 +50,7 @@ fn trivial_triple(a: &(f64, f64), b: &(f64, f64), c: &(f64, f64)) -> Option<Disk
         return None;
     }
 }
-
+/// Computes the smallest enclosing disk of points `enclosing` (`boundary` should initially be empty), returns `None` if it does not exist
 pub fn smallest_disk(
     enclosing: &mut Vec<(f64, f64)>,
     boundary: &mut Vec<(f64, f64)>,

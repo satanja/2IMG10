@@ -14,6 +14,7 @@ pub struct Polygon {
 }
 
 impl Polygon {
+    /// Constructs a new Polygon
     pub fn new(vertices: Vec<(f64, f64)>) -> Polygon {
         let line_string =
             LineString::from_iter(vertices.clone().into_iter().map(|(x, y)| Point::new(x, y)));
@@ -21,10 +22,12 @@ impl Polygon {
         Polygon { vertices, polygon }
     }
 
+    /// Returns wether `self` contains `point`
     pub fn contains(&self, point: &(f64, f64)) -> bool {
         self.polygon.contains(&point!(x: point.0, y: point.1))
     }
 
+    /// Returns the centroid of all the vertices
     pub fn centroid(&self) -> Option<(f64, f64)> {
         if let Some(c) = self.polygon.centroid() {
             return Some((c.x(), c.y()));
@@ -32,6 +35,7 @@ impl Polygon {
         None
     }
 
+    /// Returns the smallest enclosing disk of the vertices
     pub fn smallest_disk_centroid(&self) -> Option<(f64, f64)> {
         let mut enclosing = self.vertices.clone();
         let mut boundary = Vec::new();

@@ -3,10 +3,33 @@ mod graph;
 mod io;
 mod reeb_graph;
 
-use geometry::{smallest_disk, Disk};
+use fxhash::FxHashMap;
+use geometry::{smallest_disk, Disk, Polygon};
 use reeb_graph::ReebGraph;
 use std::{io::Write, path::PathBuf};
 use structopt::StructOpt;
+
+use crate::reeb_graph::CriticalPoint;
+
+/// Data structure that holds the critical point which will be used in the reeb graph,
+/// and the list of polygons map to this critical point
+struct Relation {
+    critical_point: CriticalPoint,
+    polygons: Vec<(usize, usize)>,
+}
+
+impl Relation {
+    pub fn new(critical_point: CriticalPoint) -> Relation {
+        Relation {
+            critical_point,
+            polygons: Vec::new(),
+        }
+    }
+
+    pub fn add_polygon_index(&mut self, polygon: (usize, usize)) {
+        self.polygons.push(polygon);
+    }
+}
 
 #[derive(Debug, StructOpt)]
 struct Opt {
@@ -32,19 +55,31 @@ struct Opt {
     algorithm: String,
 }
 
+/// Simple percentage indicator for user feedback
 fn print_percentage(progress: usize, total: usize) {
     let percentage = (progress as f64) / (total as f64) * 100.;
-    print!("processed {:.2}%\r", percentage);
+    print!("Processed {:.2}%\r", percentage);
     std::io::stdout().flush().unwrap();
 }
 
+/// Finds the polygon that contains `point`, if it exists, and returns its index in `islands`
+fn point_location(islands: &Vec<Polygon>, point: &(f64, f64)) -> Option<usize> {
+    for i in 0..islands.len() {
+        let island = &islands[i];
+        if island.contains(point) {
+            return Some(i);
+        }
+    }
+    None
+}
+
 fn main() {
-    println!("loading networks and constructing data structures...");
+    println!("Loading networks and constructing data structures...");
     let opt = Opt::from_args();
 
     let delta = opt.delta;
     let input_dir = opt.input_dir;
-    let input_paths = std::fs::read_dir(input_dir.clone()).unwrap();
+    let input_paths = std::fs::read_dir(input_dir).unwrap();
     let inputs: Vec<_> = input_paths
         .into_iter()
         .filter(|path| match path {
@@ -67,15 +102,14 @@ fn main() {
         island_stack.push(network.polygons());
         print_percentage(i + 1, inputs.len());
     }
-    println!();
-    println!("completed!\n");
+    println!("\n");
 
     match opt.algorithm.as_ref() {
         "centroid" => {
-            print!("using the polygonal centroid algorithm!");
+            println!("Using the polygonal centroid algorithm");
         }
         "disk" => {
-            print!("using the smallest enclosing disk centroid algorithm!");
+            println!("Using the smallest enclosing disk centroid algorithm");
         }
         _ => println!("Algorithm not found."),
     }
