@@ -1,7 +1,6 @@
 use fxhash::FxHashMap;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct CriticalPoint {
     value: usize,
 }

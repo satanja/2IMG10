@@ -7,7 +7,7 @@ use crate::graph::Graph;
 
 pub fn read_network(delta: f64, path: &PathBuf) -> Result<Graph> {
     let file = File::open(path)?;
-    
+
     let mut graph = Graph::new();
     let mut reader = BufReader::new(file);
 
@@ -58,7 +58,7 @@ pub fn read_network(delta: f64, path: &PathBuf) -> Result<Graph> {
         }
         line.clear();
     }
-    
+
     graph.reduce();
     Ok(graph)
 }
