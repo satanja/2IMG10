@@ -127,9 +127,6 @@ impl Graph {
     }
 
     pub fn polygons(&self) -> Vec<Polygon> {
-        println!("{}", self.vertices());
-        println!("{}", self.edges());
-
         let mut dcel = DCEL::new();
         for (vertex, index) in &self.vertices {
             for edge in &self.adj[*index] {
