@@ -93,14 +93,16 @@ fn main() {
             _ => false,
         })
         .collect();
-    print_percentage(0, inputs.len());
+    // print_percentage(0, inputs.len());
 
+    let mut networks = Vec::new();
     let mut island_stack = Vec::new();
     for i in 0..inputs.len() {
         let path = inputs[i].as_ref().unwrap().path();
         let network = io::read_network(delta, &path).unwrap();
         island_stack.push(network.polygons());
-        print_percentage(i + 1, inputs.len());
+        networks.push(network);
+        // print_percentage(i + 1, inputs.len());
     }
     println!("\n");
 
@@ -113,4 +115,12 @@ fn main() {
         }
         _ => println!("Algorithm not found."),
     }
+
+    // println!("<ipeselection pos=\"0 0\">");
+    // for p in &island_stack[660] {
+    //     p.to_ipe();
+    // }
+    // println!("</ipeselection>");
+    networks[660].to_ipe();
+
 }
