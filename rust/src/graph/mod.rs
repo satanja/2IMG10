@@ -54,6 +54,7 @@ impl Graph {
         }
     }
 
+    #[allow(dead_code)]
     /// Removes all vertices with one outgoing edge exhaustively
     pub fn reduce(&mut self) {
         // TODO fix indices
@@ -77,15 +78,18 @@ impl Graph {
                     .map(|index| self.vertices[index])
                     .collect();
 
-                let set_vertices: FxHashSet<_> = good_vertices.clone().into_iter().collect();
+                let mut set_vertices = FxHashMap::default();
+                for vertex in &good_vertices {
+                    set_vertices.insert(*vertex, set_vertices.len());
+                }
 
                 self.adj = good_vertices
                     .iter()
                     .map(|index| {
                         self.adj[*index]
                             .iter()
-                            .filter(|j| set_vertices.contains(*j))
-                            .map(|j| *j)
+                            .filter(|j| set_vertices.contains_key(*j))
+                            .map(|j| *set_vertices.get(j).unwrap())
                             .collect()
                     })
                     .collect();
@@ -172,44 +176,58 @@ mod tests {
 
     #[test]
     fn insert_edge() {
-        // let mut graph = Graph::new();
-        // graph.add_edge((0, 0), (1, 1), 0.5);
-        // assert_eq!(graph.vertices(), 2);
-        // assert_eq!(graph.edges(), 1);
+        let mut graph = Graph::new();
+        graph.add_vertex((0, 0));
+        graph.add_vertex((1, 1));
+        graph.add_edge(0, 1, 0.5);
+        assert_eq!(graph.vertices(), 2);
+        assert_eq!(graph.edges(), 1);
     }
 
     #[test]
     fn reduce_to_empty() {
-        // let mut graph = Graph::new();
-        // graph.add_edge((0, 0), (1, 1), 0.5);
-        // graph.reduce();
-        // assert_eq!(graph.vertices(), 0);
-        // assert_eq!(graph.edges(), 0);
+        let mut graph = Graph::new();
+        graph.add_vertex((0, 0));
+        graph.add_vertex((1, 1));
+        graph.add_edge(0, 1, 0.5);
+        graph.reduce();
+        assert_eq!(graph.vertices(), 0);
+        assert_eq!(graph.edges(), 0);
     }
 
     #[test]
     fn reduce() {
-        // let mut graph = Graph::new();
-        // graph.add_edge((0, 0), (1, 1), 0.5);
-        // graph.add_edge((0, 0), (0, 1), 0.5);
-        // graph.add_edge((0, 1), (1, 0), 0.5);
-        // graph.add_edge((0, 0), (1, 0), 0.5);
-        // graph.reduce();
-        // assert_eq!(graph.vertices(), 3);
-        // assert_eq!(graph.edges(), 3);
+        let mut graph = Graph::new();
+        graph.add_vertex((0, 0));
+        graph.add_vertex((0, 1));
+        graph.add_vertex((1, 0));
+        graph.add_vertex((1, 1));
+        graph.add_edge(0, 3, 0.5);
+        graph.add_edge(0, 1, 0.5);
+        graph.add_edge(1, 2, 0.5);
+        graph.add_edge(0, 2, 0.5);
+        graph.reduce();
+        assert_eq!(graph.vertices(), 3);
+        assert_eq!(graph.edges(), 3);
     }
 
     #[test]
     fn polygons() {
-        // let mut graph = Graph::new();
-        // graph.add_edge((0, 0), (1, 0), 1.);
-        // graph.add_edge((0, 0), (0, 1), 1.);
-        // graph.add_edge((0, 1), (1, 1), 1.);
-        // graph.add_edge((1, 0), (2, 0), 1.);
-        // graph.add_edge((1, 0), (1, 1), 1.);
-        // graph.add_edge((1, 1), (2, 1), 1.);
-        // graph.add_edge((2, 0), (2, 1), 1.);
+        let mut graph = Graph::new();
+        graph.add_vertex((0, 0));
+        graph.add_vertex((0, 1));
+        graph.add_vertex((1, 0));
+        graph.add_vertex((1, 1));
+        graph.add_vertex((2, 0));
+        graph.add_vertex((2, 1));
+        graph.add_edge(0, 1, 1.);
+        graph.add_edge(0, 2, 1.);
+        graph.add_edge(1, 2, 1.);
+        graph.add_edge(1, 4, 1.);
+        graph.add_edge(2, 3, 1.);
+        graph.add_edge(2, 5, 1.);
+        graph.add_edge(4, 5, 1.);
 
-        // assert_eq!(graph.polygons().len(), 2);
+        assert_eq!(graph.polygons().len(), 2);
     }
 }
