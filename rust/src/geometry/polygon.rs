@@ -4,9 +4,9 @@ use geo::algorithm::contains::Contains;
 use geo::concave_hull::ConcaveHull;
 use geo::point;
 use geo::prelude::Centroid;
+use geo::simplify::Simplify;
 use geo::LineString;
 use geo::Point;
-use geo::simplify::Simplify;
 use geo_svg::ToSvg;
 
 use crate::geometry::smallest_disk;
@@ -22,8 +22,7 @@ impl Polygon {
     pub fn new(vertices: Vec<(f64, f64)>) -> Polygon {
         let line_string =
             LineString::from_iter(vertices.clone().into_iter().map(|(x, y)| Point::new(x, y)));
-        let mut polygon = geo::Polygon::new(line_string, vec![]);
-        // polygon = polygon.concave_hull(1.0);
+        let polygon = geo::Polygon::new(line_string, vec![]);
         Polygon { vertices, polygon }
     }
 
@@ -51,7 +50,11 @@ impl Polygon {
     }
 
     pub fn to_svg(&self) {
-        let svg = self.polygon.to_svg().with_radius(0.4).with_color(geo_svg::Color::Named("green"));
+        let svg = self
+            .polygon
+            .to_svg()
+            .with_radius(0.4)
+            .with_color(geo_svg::Color::Named("green"));
         println!("{}", svg);
     }
 

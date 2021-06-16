@@ -121,7 +121,6 @@ impl DCEL {
     }
 
     pub fn add_edge_unchecked(&mut self, a: &(i32, i32), b: &(i32, i32)) {
-
         let twins = self.add_twins();
         if !self.map.contains_key(a) {
             self.map.insert(*a, self.vertices.len());
@@ -144,13 +143,13 @@ impl DCEL {
             self.vertices.push(v);
             self.adj.push(Vec::new());
         }
-        
+
         let i = *self.map.get(a).unwrap();
         let j = *self.map.get(b).unwrap();
 
         self.adj[i].push(twins.1);
         self.adj[j].push(twins.0);
-        
+
         self.halfedges[twins.0].origin = i;
         self.halfedges[twins.1].origin = j;
     }

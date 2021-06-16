@@ -28,7 +28,6 @@ pub fn read_network(delta: f64, path: &PathBuf) -> Result<Graph> {
         let x = coords[1].parse::<i32>().unwrap();
         let y = coords[2].parse::<i32>().unwrap();
 
-        
         if !vertices.contains_key(&(x, y)) {
             vertices.insert((x, y), vertices.len());
             graph.add_vertex((x, y));
