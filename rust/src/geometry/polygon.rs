@@ -1,12 +1,16 @@
 use std::iter::FromIterator;
 
 use geo::algorithm::contains::Contains;
+use geo::concave_hull::ConcaveHull;
 use geo::point;
 use geo::prelude::Centroid;
 use geo::LineString;
 use geo::Point;
+use geo::simplify::Simplify;
+use geo_svg::ToSvg;
 
 use crate::geometry::smallest_disk;
+use geo::algorithm::concave_hull;
 
 pub struct Polygon {
     vertices: Vec<(f64, f64)>,
@@ -18,7 +22,8 @@ impl Polygon {
     pub fn new(vertices: Vec<(f64, f64)>) -> Polygon {
         let line_string =
             LineString::from_iter(vertices.clone().into_iter().map(|(x, y)| Point::new(x, y)));
-        let polygon = geo::Polygon::new(line_string, vec![]);
+        let mut polygon = geo::Polygon::new(line_string, vec![]);
+        // polygon = polygon.concave_hull(1.0);
         Polygon { vertices, polygon }
     }
 
@@ -43,6 +48,27 @@ impl Polygon {
             Some(disk) => Some(disk.centroid()),
             None => None,
         }
+    }
+
+    pub fn to_svg(&self) {
+        let svg = self.polygon.to_svg().with_radius(0.4).with_color(geo_svg::Color::Named("green"));
+        println!("{}", svg);
+    }
+
+    pub fn to_ipe(&self) {
+        println!("<path layer=\"alpha\" stroke=\"black\">");
+        let simplified: Vec<_> = self.polygon.exterior().points_iter().collect();
+        for i in 0..simplified.len() {
+            let x = simplified[i].x();
+            let y = simplified[i].y();
+            if i == 0 {
+                println!("{} {} m", x, y);
+            } else {
+                println!("{} {} l", x, y);
+            }
+        }
+        println!("h");
+        println!("</path>");
     }
 }
 

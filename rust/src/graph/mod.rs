@@ -6,99 +6,99 @@ use crate::geometry::DCEL;
 
 #[derive(Clone)]
 pub struct NetworkEdge {
-    pos: (i32, i32),
+    index: usize,
     delta: f64,
 }
 
 impl NetworkEdge {
-    pub fn new(pos: (i32, i32), delta: f64) -> NetworkEdge {
-        NetworkEdge { pos, delta }
+    pub fn new(index: usize, delta: f64) -> NetworkEdge {
+        NetworkEdge { index, delta }
     }
 }
 
 pub struct Graph {
-    vertices: FxHashMap<(i32, i32), usize>,
-    adj: Vec<Vec<NetworkEdge>>,
+    set_vertices: FxHashMap<(i32, i32), usize>,
+    vertices: Vec<(i32, i32)>,
+    adj: Vec<Vec<usize>>,
 }
 
 impl Graph {
     pub fn new() -> Graph {
         Graph {
-            vertices: FxHashMap::default(),
+            set_vertices: FxHashMap::default(),
+            vertices: Vec::new(),
             adj: Vec::new(),
         }
     }
 
     fn get_index(&self, vertex: &(i32, i32)) -> usize {
-        *self.vertices.get(vertex).unwrap()
+        *self.set_vertices.get(vertex).unwrap()
     }
 
-    fn add_vertex(&mut self, vertex: &(i32, i32)) {
-        if !self.vertices.contains_key(vertex) {
-            self.vertices.insert(vertex.clone(), self.vertices());
+    pub fn add_vertex(&mut self, vertex: &(i32, i32)) {
+        if !self.set_vertices.contains_key(&vertex) {
+            self.set_vertices.insert(*vertex, self.vertices());
+            self.vertices.push(*vertex);
             self.adj.push(Vec::new());
         }
     }
 
     /// Inserts an edge into the graph. Also inserts vertices if they were not present in the graph.
     pub fn add_edge(&mut self, from: (i32, i32), to: (i32, i32), delta: f64) {
+        if from == to {
+            return;
+        }
+        
         self.add_vertex(&from);
         self.add_vertex(&to);
 
         let i = self.get_index(&from);
         let j = self.get_index(&to);
 
-        self.adj[i].push(NetworkEdge::new(to, delta));
-        self.adj[j].push(NetworkEdge::new(from, delta));
+        if let Err(index) = self.adj[i].binary_search(&j) {
+            self.adj[i].insert(index, j);
+        }
+
+        if let Err(index) = self.adj[j].binary_search(&i) {
+            self.adj[j].insert(index, i);
+        }
     }
 
     /// Removes all vertices with one outgoing edge exhaustively
     pub fn reduce(&mut self) {
+        // TODO fix indices
         loop {
             let mut reduced = false;
-            let mut singles: Vec<_> = self
-                .vertices
-                .iter()
-                .filter(|(_, index)| self.adj[**index].len() <= 1)
+            let singles: Vec<_> = (0..self.vertices.len())
+                .filter(|index| self.adj[*index].len() <= 1)
+                .map(|index| self.vertices[index])
                 .collect();
 
             if singles.len() > 0 {
                 reduced = true;
-                singles.sort_by(|(_, a), (_, b)| a.cmp(b));
-                let set: FxHashSet<_> = singles.clone().into_iter().map(|(pos, _)| *pos).collect();
-                let mut j = 0;
 
-                let mut new_adj = Vec::new();
-                for i in 0..self.adj.len() {
-                    if j < singles.len() && i == *singles[j].1 {
-                        j += 1;
-                    } else {
-                        let filtered: Vec<_> = self.adj[i]
-                            .clone()
-                            .into_iter()
-                            .filter(|e| !set.contains(&e.pos))
-                            .collect();
-
-                        new_adj.push(filtered);
-                    }
-                }
-
-                let mut good_vertices: Vec<_> = self
-                    .vertices
-                    .iter()
-                    .filter(|(_, index)| self.adj[**index].len() > 1)
+                let good_vertices: Vec<_> = (0..self.vertices.len())
+                    .filter(|index| self.adj[*index].len() > 1)
                     .collect();
-                good_vertices.sort_by(|(_, a), (_, b)| a.cmp(b));
 
-                let mut new_vertices = FxHashMap::default();
-                let mut n = 0;
-                for (pos, _) in good_vertices {
-                    new_vertices.insert(*pos, n);
-                    n += 1;
-                }
+                self.vertices = good_vertices
+                    .clone()
+                    .into_iter()
+                    .map(|index| self.vertices[index])
+                    .collect();
 
-                self.vertices = new_vertices;
-                self.adj = new_adj;
+                let set_vertices: FxHashSet<_> = good_vertices.clone().into_iter().collect();
+
+                self.adj = good_vertices
+                    .iter()
+                    .map(|index| {
+                        self.adj[*index]
+                            .iter()
+                            .filter(|j| set_vertices.contains(*j))
+                            .map(|j| *j)
+                            .collect()
+                    })
+                    .collect();
             }
 
             if !reduced {
@@ -108,8 +108,8 @@ impl Graph {
     }
 
     /// Gets the list of edges from `vertex`
-    pub fn get_edges(&self, vertex: &(i32, i32)) -> Option<&Vec<NetworkEdge>> {
-        if let Some(index) = self.vertices.get(vertex) {
+    pub fn get_edges(&self, vertex: &(i32, i32)) -> Option<&Vec<usize>> {
+        if let Some(index) = self.set_vertices.get(vertex) {
             Some(&self.adj[*index])
         } else {
             None
@@ -126,20 +126,54 @@ impl Graph {
         self.adj.iter().fold(0, |acc, edges| acc + edges.len()) / 2
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.vertices() == 0 && self.edges() == 0
+    }
+
     pub fn polygons(&self) -> Vec<Polygon> {
         let mut dcel = DCEL::new();
-        todo!("Only add each edge once!");
-        for (vertex, index) in &self.vertices {
-            for edge in &self.adj[*index] {
-                let from = (vertex.0, vertex.1);
-                let to = (edge.pos.0, edge.pos.1);
 
-                dcel.add_edge_unchecked(&from, &to);
+        for i in 0..self.adj.len() {
+            for j in 0..self.adj[i].len() {
+                if self.adj[i][j] <= i {
+                    continue;
+                }
+                let from = &self.vertices[i];
+                let k = self.adj[i][j];
+
+                let to = &self.vertices[k];
+                dcel.add_edge_unchecked(from, to);
             }
         }
+
         dcel.build();
         dcel.add_faces();
         dcel.make_polygons()
+    }
+
+    pub fn to_ipe(&self) {
+        println!("<ipeselection pos=\"0 0\">");
+        for vertex in &self.vertices {
+            println!("<use layer=\"alpha\" name=\"mark/disk(sx)\" pos=\"{} {}\" size=\"normal\" stroke=\"black\"/>",vertex.0, vertex.1);
+        }
+
+        for i in 0..self.adj.len() {
+            for j in 0..self.adj[i].len() {
+                if self.adj[i][j] <= i {
+                    continue;
+                }
+                let from = &self.vertices[i];
+                let k = self.adj[i][j];
+
+                let to = &self.vertices[k];
+                println!("<path layer=\"alpha\" stroke=\"black\">");
+                println!("{} {} m", from.0, from.1);
+                println!("{} {} l", to.0, to.1);
+                println!("</path>");
+
+            }
+        }
+        println!("</ipeselection>");
     }
 }
 
@@ -174,5 +208,19 @@ mod tests {
         graph.reduce();
         assert_eq!(graph.vertices(), 3);
         assert_eq!(graph.edges(), 3);
+    }
+
+    #[test]
+    fn polygons() {
+        let mut graph = Graph::new();
+        graph.add_edge((0, 0), (1, 0), 1.);
+        graph.add_edge((0, 0), (0, 1), 1.);
+        graph.add_edge((0, 1), (1, 1), 1.);
+        graph.add_edge((1, 0), (2, 0), 1.);
+        graph.add_edge((1, 0), (1, 1), 1.);
+        graph.add_edge((1, 1), (2, 1), 1.);
+        graph.add_edge((2, 0), (2, 1), 1.);
+
+        assert_eq!(graph.polygons().len(), 2);
     }
 }

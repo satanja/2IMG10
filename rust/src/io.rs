@@ -59,6 +59,6 @@ pub fn read_network(delta: f64, path: &PathBuf) -> Result<Graph> {
         line.clear();
     }
 
-    graph.reduce();
+    // graph.reduce();
     Ok(graph)
 }
