@@ -100,7 +100,10 @@ fn main() {
     for i in 0..inputs.len() {
         let path = inputs[i].as_ref().unwrap().path();
         let network = io::read_network(delta, &path).unwrap();
-        island_stack.push(network.polygons());
+        let polygons = network.polygons();
+        if polygons.len() != 0 {
+            island_stack.push(polygons);
+        }
         networks.push(network);
         print_percentage(i + 1, inputs.len());
     }
