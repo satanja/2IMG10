@@ -4,7 +4,17 @@ pub struct Line {
     intercept: Option<f64>,
 }
 
+use geo::Point;
+
 impl Line {
+    pub fn from_points(a: &Point<f64>, b: &Point<f64>) -> Line {
+        let left = if a.x() <= b.x() { a } else { b };
+        let right = if a.x() <= b.x() { b } else { a };
+
+        let slope = (right.y() - left.y()) / (right.x() - left.x());
+        Line::new(slope, (a.x(), a.y()))
+    }
+
     pub fn new(slope: f64, contact: (f64, f64)) -> Line {
         let s = if slope.is_infinite() {
             None

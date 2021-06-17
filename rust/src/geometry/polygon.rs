@@ -17,13 +17,49 @@ pub struct Polygon {
     polygon: geo::Polygon<f64>,
 }
 
+use crate::geometry::Line;
+
 impl Polygon {
     /// Constructs a new Polygon
     pub fn new(vertices: Vec<(f64, f64)>) -> Polygon {
-        let line_string =
-            LineString::from_iter(vertices.clone().into_iter().map(|(x, y)| Point::new(x, y)));
+        let simplified = Polygon::simplify(vertices);
+        let line_string = LineString::from_iter(
+            simplified
+                .clone()
+                .into_iter()
+                .map(|(x, y)| Point::new(x, y)),
+        );
         let polygon = geo::Polygon::new(line_string, vec![]);
-        Polygon { vertices, polygon }
+        Polygon {
+            vertices: simplified,
+            polygon,
+        }
+    }
+
+    /// Removes colinear points across the boundary of the polygon
+    fn simplify(vertices: Vec<(f64, f64)>) -> Vec<(f64, f64)> {
+        let mut simplified = Vec::new();
+        for i in 0..vertices.len() {
+            if simplified.len() < 2 {
+                simplified.push(vertices[i]);
+            } else {
+                let a = Point::from(simplified[simplified.len() - 2]);
+                let mid = Point::from(simplified[simplified.len() - 1]);
+                let b = Point::from(vertices[i]);
+
+                let l1 = Line::from_points(&a, &mid);
+                let l2 = Line::from_points(&mid, &b);
+
+                if l1.is_overlapping_with(&l2) {
+                    // points are colinear
+                    simplified.pop();
+                }
+
+                simplified.push(vertices[i]);
+            }
+        }
+
+        simplified
     }
 
     /// Returns wether `self` contains `point`
