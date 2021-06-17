@@ -6,7 +6,7 @@ mod reeb_graph;
 use fxhash::FxHashMap;
 use geometry::{smallest_disk, Disk, Polygon};
 use reeb_graph::ReebGraph;
-use std::{io::Write, path::PathBuf};
+use std::{fs::DirEntry, io::{Error, Write}, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::reeb_graph::CriticalPoint;
@@ -120,10 +120,66 @@ fn main() {
         }
         "centroid" => {
             println!("Using the polygonal centroid algorithm");
+            compute_reeb_graph(inputs, delta, 0);
         }
         "disk" => {
             println!("Using the smallest enclosing disk centroid algorithm");
+            compute_reeb_graph(inputs, delta, 1);
         }
         _ => println!("Algorithm not found."),
     }
+}
+
+fn compute_reeb_graph(inputs: Vec<Result<DirEntry, Error>>, delta: f64, method: i32) -> ReebGraph {
+    let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
+
+    let mut old_islands = io::read_network(delta, &inputs[0].as_ref().unwrap().path()).unwrap().polygons();
+
+    let mut acc_ids = 1; // accumulated number of islands before old_islands
+    let mut fails = 0;
+
+    for i in 0..old_islands.len() {
+        reeb.add_point(&CriticalPoint::new(0), &CriticalPoint::new(acc_ids + i));
+        println!("Added {}", acc_ids + i);
+    }
+
+    acc_ids += old_islands.len();
+
+    for layer in 1..inputs.len() {
+        let input = inputs[layer].as_ref();
+        let islands = io::read_network(delta, &input.unwrap().path()).unwrap().polygons();
+
+        for poly_new in 0..islands.len() {
+            let new_centroid: (f64, f64) = if method == 0 {
+                islands[poly_new].centroid().unwrap()
+            } else {
+                islands[poly_new].smallest_disk_centroid().unwrap()
+            };
+            let mut placed = false;
+            for poly_old in 0..old_islands.len() {
+                let old_centroid: (f64, f64) = if method == 0 {
+                    old_islands[poly_old].centroid().unwrap()
+                } else {
+                    old_islands[poly_old].smallest_disk_centroid().unwrap()
+                };
+                let old_contains_new = old_islands[poly_old].contains(&old_centroid); // if so: split or normal
+                let new_contains_old = islands[poly_new].contains(&new_centroid); // if so: merge or normal
+                if (old_contains_new || new_contains_old) {
+                    placed = true;
+                    reeb.add_point(&CriticalPoint::new(acc_ids + poly_old), &CriticalPoint::new(acc_ids + old_islands.len() + poly_new));
+                }
+            }
+            if !placed { // oopsie
+                //println!("Shit, I don't know how to connect {}", acc_ids + old_islands.len() + poly_new);
+                reeb.add_point(&CriticalPoint::new(0), &CriticalPoint::new(acc_ids + old_islands.len() + poly_new));
+                fails += 1;
+            }
+        }
+        acc_ids += old_islands.len();
+        old_islands = islands;
+    }
+    acc_ids += old_islands.len();
+    println!("I managed to properly connect {}/{} nodes.", acc_ids - fails, acc_ids);
+
+    return reeb;
 }
