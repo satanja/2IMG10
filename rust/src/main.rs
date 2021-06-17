@@ -3,33 +3,11 @@ mod graph;
 mod io;
 mod reeb_graph;
 
-use fxhash::FxHashMap;
-use geometry::{smallest_disk, Disk, Polygon};
 use reeb_graph::ReebGraph;
-use std::{fs::DirEntry, io::{Error, Write}, path::PathBuf};
+use std::{fs::DirEntry, io::Error, path::PathBuf};
 use structopt::StructOpt;
 
 use crate::reeb_graph::CriticalPoint;
-
-/// Data structure that holds the critical point which will be used in the reeb graph,
-/// and the list of polygons map to this critical point
-struct Relation {
-    critical_point: CriticalPoint,
-    polygons: Vec<(usize, usize)>,
-}
-
-impl Relation {
-    pub fn new(critical_point: CriticalPoint) -> Relation {
-        Relation {
-            critical_point,
-            polygons: Vec::new(),
-        }
-    }
-
-    pub fn add_polygon_index(&mut self, polygon: (usize, usize)) {
-        self.polygons.push(polygon);
-    }
-}
 
 #[derive(Debug, StructOpt)]
 struct Opt {
@@ -53,24 +31,6 @@ struct Opt {
 
     #[structopt(short, long, default_value = "centroid")]
     algorithm: String,
-}
-
-/// Simple percentage indicator for user feedback
-fn print_percentage(progress: usize, total: usize) {
-    let percentage = (progress as f64) / (total as f64) * 100.;
-    print!("Processed {:.2}%\r", percentage);
-    std::io::stdout().flush().unwrap();
-}
-
-/// Finds the polygon that contains `point`, if it exists, and returns its index in `islands`
-fn point_location(islands: &Vec<Polygon>, point: &(f64, f64)) -> Option<usize> {
-    for i in 0..islands.len() {
-        let island = &islands[i];
-        if island.contains(point) {
-            return Some(i);
-        }
-    }
-    None
 }
 
 fn main() {
@@ -133,7 +93,9 @@ fn main() {
 fn compute_reeb_graph(inputs: Vec<Result<DirEntry, Error>>, delta: f64, method: i32) -> ReebGraph {
     let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
 
-    let mut old_islands = io::read_network(delta, &inputs[0].as_ref().unwrap().path()).unwrap().polygons();
+    let mut old_islands = io::read_network(delta, &inputs[0].as_ref().unwrap().path())
+        .unwrap()
+        .polygons();
 
     let mut acc_ids = 1; // accumulated number of islands before old_islands
     let mut fails = 0;
@@ -146,32 +108,42 @@ fn compute_reeb_graph(inputs: Vec<Result<DirEntry, Error>>, delta: f64, method: 
     acc_ids += old_islands.len();
 
     for layer in 1..inputs.len() {
+        println!("{}", layer);
         let input = inputs[layer].as_ref();
-        let islands = io::read_network(delta, &input.unwrap().path()).unwrap().polygons();
+        let islands = io::read_network(delta, &input.unwrap().path())
+            .unwrap()
+            .polygons();
 
         for poly_new in 0..islands.len() {
-            let new_centroid: (f64, f64) = if method == 0 {
+            let new_centroid = if method == 0 {
                 islands[poly_new].centroid().unwrap()
             } else {
                 islands[poly_new].smallest_disk_centroid().unwrap()
             };
             let mut placed = false;
             for poly_old in 0..old_islands.len() {
-                let old_centroid: (f64, f64) = if method == 0 {
+                let old_centroid = if method == 0 {
                     old_islands[poly_old].centroid().unwrap()
                 } else {
                     old_islands[poly_old].smallest_disk_centroid().unwrap()
                 };
                 let old_contains_new = old_islands[poly_old].contains(&old_centroid); // if so: split or normal
                 let new_contains_old = islands[poly_new].contains(&new_centroid); // if so: merge or normal
-                if (old_contains_new || new_contains_old) {
+                if old_contains_new || new_contains_old {
                     placed = true;
-                    reeb.add_point(&CriticalPoint::new(acc_ids + poly_old), &CriticalPoint::new(acc_ids + old_islands.len() + poly_new));
+                    reeb.add_point(
+                        &CriticalPoint::new(acc_ids + poly_old),
+                        &CriticalPoint::new(acc_ids + old_islands.len() + poly_new),
+                    );
                 }
             }
-            if !placed { // oopsie
+            if !placed {
+                // oopsie
                 //println!("Shit, I don't know how to connect {}", acc_ids + old_islands.len() + poly_new);
-                reeb.add_point(&CriticalPoint::new(0), &CriticalPoint::new(acc_ids + old_islands.len() + poly_new));
+                reeb.add_point(
+                    &CriticalPoint::new(0),
+                    &CriticalPoint::new(acc_ids + old_islands.len() + poly_new),
+                );
                 fails += 1;
             }
         }
@@ -179,7 +151,11 @@ fn compute_reeb_graph(inputs: Vec<Result<DirEntry, Error>>, delta: f64, method: 
         old_islands = islands;
     }
     acc_ids += old_islands.len();
-    println!("I managed to properly connect {}/{} nodes.", acc_ids - fails, acc_ids);
+    println!(
+        "I managed to properly connect {}/{} nodes.",
+        acc_ids - fails,
+        acc_ids
+    );
 
     return reeb;
 }

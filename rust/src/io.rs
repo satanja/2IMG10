@@ -1,10 +1,10 @@
-use std::fs::{read, File};
+use std::fs::File;
 use std::io::Result;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 use crate::graph::Graph;
-use fxhash::{FxHashMap, FxHashSet};
+use fxhash::FxHashMap;
 
 pub fn read_network(delta: f64, path: &PathBuf) -> Result<Graph> {
     let file = File::open(path)?;
@@ -78,7 +78,7 @@ pub fn read_network(delta: f64, path: &PathBuf) -> Result<Graph> {
                         vertices.len() - 1
                     }
                 };
-                graph.add_edge(from, to, weight);
+                graph.add_edge(from, to);
             }
         }
         line.clear();

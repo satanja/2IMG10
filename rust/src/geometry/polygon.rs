@@ -1,16 +1,12 @@
 use std::iter::FromIterator;
 
 use geo::algorithm::contains::Contains;
-use geo::concave_hull::ConcaveHull;
 use geo::point;
 use geo::prelude::Centroid;
-use geo::simplify::Simplify;
 use geo::LineString;
 use geo::Point;
-use geo_svg::ToSvg;
 
 use crate::geometry::smallest_disk;
-use geo::algorithm::concave_hull;
 
 pub struct Polygon {
     vertices: Vec<(f64, f64)>,
@@ -85,15 +81,7 @@ impl Polygon {
         }
     }
 
-    pub fn to_svg(&self) {
-        let svg = self
-            .polygon
-            .to_svg()
-            .with_radius(0.4)
-            .with_color(geo_svg::Color::Named("green"));
-        println!("{}", svg);
-    }
-
+    #[allow(dead_code)]
     pub fn to_ipe(&self) {
         println!("<path layer=\"alpha\" stroke=\"black\">");
         let boundary: Vec<_> = self.polygon.exterior().points_iter().collect();

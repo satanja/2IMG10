@@ -1,23 +1,8 @@
 use fxhash::FxHashMap;
-use fxhash::FxHashSet;
-
 use crate::geometry::Polygon;
 use crate::geometry::DCEL;
 
-#[derive(Clone)]
-pub struct NetworkEdge {
-    index: usize,
-    delta: f64,
-}
-
-impl NetworkEdge {
-    pub fn new(index: usize, delta: f64) -> NetworkEdge {
-        NetworkEdge { index, delta }
-    }
-}
-
 pub struct Graph {
-    set_vertices: FxHashMap<(i32, i32), usize>,
     vertices: Vec<(i32, i32)>,
     adj: Vec<Vec<usize>>,
 }
@@ -25,14 +10,9 @@ pub struct Graph {
 impl Graph {
     pub fn new() -> Graph {
         Graph {
-            set_vertices: FxHashMap::default(),
             vertices: Vec::new(),
             adj: Vec::new(),
         }
-    }
-
-    fn get_index(&self, vertex: &(i32, i32)) -> usize {
-        *self.set_vertices.get(vertex).unwrap()
     }
 
     pub fn add_vertex(&mut self, vertex: (i32, i32)) {
@@ -41,7 +21,7 @@ impl Graph {
     }
 
     /// Inserts an edge into the graph. Also inserts vertices if they were not present in the graph.
-    pub fn add_edge(&mut self, from: usize, to: usize, delta: f64) {
+    pub fn add_edge(&mut self, from: usize, to: usize) {
         if let Err(index) = self.adj[from].binary_search(&to) {
             self.adj[from].insert(index, to);
         }
@@ -101,25 +81,19 @@ impl Graph {
         }
     }
 
-    /// Gets the list of edges from `vertex`
-    pub fn get_edges(&self, vertex: &(i32, i32)) -> Option<&Vec<usize>> {
-        if let Some(index) = self.set_vertices.get(vertex) {
-            Some(&self.adj[*index])
-        } else {
-            None
-        }
-    }
-
     /// Returns the number of vertices in the graph
+    #[allow(dead_code)]
     pub fn vertices(&self) -> usize {
         self.vertices.len()
     }
 
     /// Returns the number of edges in the graph
+    #[allow(dead_code)]
     pub fn edges(&self) -> usize {
         self.adj.iter().fold(0, |acc, edges| acc + edges.len()) / 2
     }
 
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.vertices() == 0 && self.edges() == 0
     }
@@ -145,6 +119,7 @@ impl Graph {
         dcel.make_polygons()
     }
 
+    #[allow(dead_code)]
     pub fn to_ipe(&self) {
         println!("<ipeselection pos=\"0 0\">");
         // for vertex in &self.vertices {
@@ -179,7 +154,7 @@ mod tests {
         let mut graph = Graph::new();
         graph.add_vertex((0, 0));
         graph.add_vertex((1, 1));
-        graph.add_edge(0, 1, 0.5);
+        graph.add_edge(0, 1);
         assert_eq!(graph.vertices(), 2);
         assert_eq!(graph.edges(), 1);
     }
@@ -189,7 +164,7 @@ mod tests {
         let mut graph = Graph::new();
         graph.add_vertex((0, 0));
         graph.add_vertex((1, 1));
-        graph.add_edge(0, 1, 0.5);
+        graph.add_edge(0, 1);
         graph.reduce();
         assert_eq!(graph.vertices(), 0);
         assert_eq!(graph.edges(), 0);
@@ -202,10 +177,10 @@ mod tests {
         graph.add_vertex((0, 1));
         graph.add_vertex((1, 0));
         graph.add_vertex((1, 1));
-        graph.add_edge(0, 3, 0.5);
-        graph.add_edge(0, 1, 0.5);
-        graph.add_edge(1, 2, 0.5);
-        graph.add_edge(0, 2, 0.5);
+        graph.add_edge(0, 3);
+        graph.add_edge(0, 1);
+        graph.add_edge(1, 2);
+        graph.add_edge(0, 2);
         graph.reduce();
         assert_eq!(graph.vertices(), 3);
         assert_eq!(graph.edges(), 3);
@@ -220,13 +195,13 @@ mod tests {
         graph.add_vertex((1, 1));
         graph.add_vertex((2, 0));
         graph.add_vertex((2, 1));
-        graph.add_edge(0, 1, 1.);
-        graph.add_edge(0, 2, 1.);
-        graph.add_edge(1, 2, 1.);
-        graph.add_edge(1, 4, 1.);
-        graph.add_edge(2, 3, 1.);
-        graph.add_edge(2, 5, 1.);
-        graph.add_edge(4, 5, 1.);
+        graph.add_edge(0, 1);
+        graph.add_edge(0, 2);
+        graph.add_edge(1, 2);
+        graph.add_edge(1, 4);
+        graph.add_edge(2, 3);
+        graph.add_edge(2, 5);
+        graph.add_edge(4, 5);
 
         assert_eq!(graph.polygons().len(), 2);
     }
