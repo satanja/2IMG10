@@ -6,7 +6,7 @@ Download Rust [here](https://www.rust-lang.org/learn/get-started). You may be pr
 ## Running the tool
 Firstly, make sure that in the current directory, i.e., `../2IMG10/rust/`, there is the directory `/networks/` containing all the computed networks of the TTGA tool. To run the tool, execute `cargo run --release` for the default configuration. 
 
-Important: While the tool is in development `cargo run --release` may give warnings, you can ignore these. The output of the tool appears after `Running `target\release\island-tracker.exe`.
+Important: While the tool is in development `cargo run --release` may give warnings, you can ignore these. The output of the tool appears after `Running 'target\release\island-tracker.exe'`.
 
 ### Command line options (Subject to change)
 The tool supports several command line options, namely
