@@ -22,7 +22,7 @@ To see the list of all the options, use `cargo run --release -- --help`. To use 
 ### Algorithms
 Three algorithms are implemented, namely simply counting all the islands over each layer, tracking a specific island over time using centroids of islands (polygonal centroid algorithm), and tracking a specific island over time using centroids of smallest enclosing disks of islands (smallest enclosing disk algorithm).
 
-To select the counting argument, use `cargo run --release -- -a counting`. To use the polygonal centroid algorithm, use `cargo run --release -- -a centroid`. To use the smallest enclosing disk centroid algorithm, use `cargo run --release -a disk`.
+To select the counting algorithm, use `cargo run --release -- -a counting`. To use the polygonal centroid algorithm, use `cargo run --release -- -a centroid`. To use the smallest enclosing disk centroid algorithm, use `cargo run --release -a disk`.
 
 
 ### Piping output (Subject to change)
