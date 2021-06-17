@@ -60,10 +60,10 @@ impl Polygon {
 
     pub fn to_ipe(&self) {
         println!("<path layer=\"alpha\" stroke=\"black\">");
-        let simplified: Vec<_> = self.polygon.exterior().points_iter().collect();
-        for i in 0..simplified.len() {
-            let x = simplified[i].x();
-            let y = simplified[i].y();
+        let boundary: Vec<_> = self.polygon.exterior().points_iter().collect();
+        for i in 0..boundary.len() {
+            let x = boundary[i].x();
+            let y = boundary[i].y();
             if i == 0 {
                 println!("{} {} m", x, y);
             } else {

@@ -33,7 +33,7 @@ impl Relation {
 
 #[derive(Debug, StructOpt)]
 struct Opt {
-    #[structopt(short, long, default_value = "1e7")]
+    #[structopt(short, long, default_value = "1e2")]
     delta: f64,
 
     #[structopt(short, long, default_value = "0")]
@@ -93,23 +93,31 @@ fn main() {
             _ => false,
         })
         .collect();
-    print_percentage(0, inputs.len());
+    // print_percentage(0, inputs.len());
 
-    let mut networks = Vec::new();
-    let mut island_stack = Vec::new();
-    for i in 0..inputs.len() {
-        let path = inputs[i].as_ref().unwrap().path();
-        let network = io::read_network(delta, &path).unwrap();
-        let polygons = network.polygons();
-        if polygons.len() != 0 {
-            island_stack.push(polygons);
-        }
-        networks.push(network);
-        print_percentage(i + 1, inputs.len());
-    }
-    println!("\n");
+    // let mut networks = Vec::new();
+    // let mut island_stack = Vec::new();
+    // for i in 0..inputs.len() {
+    //     let path = inputs[i].as_ref().unwrap().path();
+    //     let network = io::read_network(delta, &path).unwrap();
+    //     let polygons = network.polygons();
+    //     if polygons.len() != 0 {
+    //         island_stack.push(polygons);
+    //     // networks.push(network);
+    //     print_percentage(i + 1, inputs.len());
+    // }
+    // println!("\n");
 
     match opt.algorithm.as_ref() {
+        "counting" => {
+            println!("Counting the number of islands over time");
+            println!("t,\t islands");
+            for i in 0..inputs.len() {
+                let input = inputs[i].as_ref();
+                let network = io::read_network(delta, &input.unwrap().path()).unwrap();
+                println!("{},\t {}", i, network.polygons().len());
+            }
+        }
         "centroid" => {
             println!("Using the polygonal centroid algorithm");
         }
