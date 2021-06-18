@@ -3,11 +3,12 @@ mod graph;
 mod io;
 mod reeb_graph;
 
+use crate::reeb_graph::CriticalPoint;
+use fxhash::FxHashSet;
 use reeb_graph::ReebGraph;
+use std::collections::VecDeque;
 use std::{fs::DirEntry, io::Error, path::PathBuf};
 use structopt::StructOpt;
-
-use crate::reeb_graph::CriticalPoint;
 
 #[derive(Debug, StructOpt)]
 struct Opt {
@@ -53,20 +54,6 @@ fn main() {
             _ => false,
         })
         .collect();
-    // print_percentage(0, inputs.len());
-
-    // let mut networks = Vec::new();
-    // let mut island_stack = Vec::new();
-    // for i in 0..inputs.len() {
-    //     let path = inputs[i].as_ref().unwrap().path();
-    //     let network = io::read_network(delta, &path).unwrap();
-    //     let polygons = network.polygons();
-    //     if polygons.len() != 0 {
-    //         island_stack.push(polygons);
-    //     // networks.push(network);
-    //     print_percentage(i + 1, inputs.len());
-    // }
-    // println!("\n");
 
     match opt.algorithm.as_ref() {
         "counting" => {
@@ -80,82 +67,156 @@ fn main() {
         }
         "centroid" => {
             println!("Using the polygonal centroid algorithm");
-            compute_reeb_graph(inputs, delta, 0);
+            compute_reeb_graph(inputs, delta, (opt.x, opt.y), 0);
         }
         "disk" => {
             println!("Using the smallest enclosing disk centroid algorithm");
-            compute_reeb_graph(inputs, delta, 1);
+            compute_reeb_graph(inputs, delta, (opt.x, opt.y), 1);
         }
         _ => println!("Algorithm not found."),
     }
 }
 
-fn compute_reeb_graph(inputs: Vec<Result<DirEntry, Error>>, delta: f64, method: i32) -> ReebGraph {
-    let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
+#[derive(PartialEq, Eq, Hash, Clone)]
+struct State {
+    /// Id of the parent critical point
+    parent_id: usize,
 
-    let mut old_islands = io::read_network(delta, &inputs[0].as_ref().unwrap().path())
+    /// The next layer to match for
+    next_layer: usize,
+
+    /// Index of the layer containing the polygon whose centroid we need to compute
+    layer: usize,
+
+    /// The index of the polygon in the layer
+    index: usize,
+}
+
+fn compute_reeb_graph(
+    inputs: Vec<Result<DirEntry, Error>>,
+    delta: f64,
+    start_point: (f64, f64),
+    method: i32,
+) -> ReebGraph {
+    let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
+    let mut start_layer = 0;
+
+    let mut found = false;
+    let mut index = 0;
+
+    let input = inputs[0].as_ref();
+    let mut islands = io::read_network(delta, &input.unwrap().path())
         .unwrap()
         .polygons();
 
-    let mut acc_ids = 1; // accumulated number of islands before old_islands
-    let mut fails = 0;
-
-    for i in 0..old_islands.len() {
-        reeb.add_point(&CriticalPoint::new(0), &CriticalPoint::new(acc_ids + i));
-        println!("Added {}", acc_ids + i);
-    }
-
-    acc_ids += old_islands.len();
-
-    for layer in 1..inputs.len() {
-        println!("{}", layer);
-        let input = inputs[layer].as_ref();
-        let islands = io::read_network(delta, &input.unwrap().path())
-            .unwrap()
-            .polygons();
-
-        for poly_new in 0..islands.len() {
-            let new_centroid = if method == 0 {
-                islands[poly_new].centroid().unwrap()
-            } else {
-                islands[poly_new].smallest_disk_centroid().unwrap()
-            };
-            let mut placed = false;
-            for poly_old in 0..old_islands.len() {
-                let old_centroid = if method == 0 {
-                    old_islands[poly_old].centroid().unwrap()
-                } else {
-                    old_islands[poly_old].smallest_disk_centroid().unwrap()
-                };
-                let old_contains_new = old_islands[poly_old].contains(&old_centroid); // if so: split or normal
-                let new_contains_old = islands[poly_new].contains(&new_centroid); // if so: merge or normal
-                if old_contains_new || new_contains_old {
-                    placed = true;
-                    reeb.add_point(
-                        &CriticalPoint::new(acc_ids + poly_old),
-                        &CriticalPoint::new(acc_ids + old_islands.len() + poly_new),
-                    );
-                }
-            }
-            if !placed {
-                // oopsie
-                //println!("Shit, I don't know how to connect {}", acc_ids + old_islands.len() + poly_new);
-                reeb.add_point(
-                    &CriticalPoint::new(0),
-                    &CriticalPoint::new(acc_ids + old_islands.len() + poly_new),
-                );
-                fails += 1;
+    'search_loop: for layer in 0..inputs.len() {
+        for j in 0..islands.len() {
+            let island = &islands[j];
+            if island.contains(&start_point) {
+                found = true;
+                index = j;
+                start_layer = layer;
+                break 'search_loop;
             }
         }
-        acc_ids += old_islands.len();
-        old_islands = islands;
-    }
-    acc_ids += old_islands.len();
-    println!(
-        "I managed to properly connect {}/{} nodes.",
-        acc_ids - fails,
-        acc_ids
-    );
 
-    return reeb;
+        if layer + 1 < inputs.len() {
+            let input = inputs[layer + 1].as_ref();
+            islands = io::read_network(delta, &input.unwrap().path())
+                .unwrap()
+                .polygons();
+        }
+    }
+
+    if !found {
+        println!("Island containing {:?} not found", start_point);
+        return reeb;
+    }
+
+    let mut queue = VecDeque::new();
+    queue.push_back(State {
+        parent_id: 0,
+        next_layer: start_layer + 1,
+        layer: start_layer,
+        index,
+    });
+
+    let mut included = FxHashSet::default();
+    included.insert(State {
+        parent_id: 0,
+        next_layer: start_layer + 1,
+        layer: start_layer,
+        index,
+    });
+
+    let mut old_layer = start_layer;
+    let mut old_islands = islands;
+    let mut new_layer = start_layer + 1;
+    let next_input = inputs[start_layer + 1].as_ref();
+    let mut new_islands = io::read_network(delta, &next_input.unwrap().path())
+        .unwrap()
+        .polygons();
+
+    let mut start_ids = old_islands.len();
+
+    while let Some(State {
+        parent_id,
+        next_layer,
+        layer,
+        index,
+    }) = queue.pop_front()
+    {
+        println!("{}", next_layer);
+        if next_layer == inputs.len() {
+            continue;
+        }
+
+        if layer != old_layer && next_layer != new_layer {
+            start_ids += old_islands.len();
+            old_layer = new_layer;
+            old_islands = new_islands;
+
+            new_layer = next_layer;
+            let next_input = inputs[next_layer].as_ref();
+            new_islands = io::read_network(delta, &next_input.unwrap().path())
+                .unwrap()
+                .polygons();
+        }
+
+        let old_centroid = if method == 0 {
+            old_islands[index].centroid().unwrap()
+        } else {
+            old_islands[index].smallest_disk_centroid().unwrap()
+        };
+
+        for poly_new in 0..new_islands.len() {
+            let new_centroid = if method == 0 {
+                new_islands[poly_new].centroid().unwrap()
+            } else {
+                new_islands[poly_new].smallest_disk_centroid().unwrap()
+            };
+
+            let id = start_ids + poly_new;
+
+            let old_contains_new = old_islands[index].contains(&new_centroid); // if so: split or normal
+            let new_contains_old = new_islands[poly_new].contains(&old_centroid); // if so: merge or normal
+            if old_contains_new || new_contains_old {
+                reeb.add_point(&CriticalPoint::new(parent_id), &CriticalPoint::new(id));
+
+                let state = State {
+                    index: poly_new,
+                    next_layer: new_layer + 1,
+                    layer: new_layer,
+                    parent_id: id,
+                };
+
+                if !included.contains(&state) {
+                    included.insert(state.clone());
+                    queue.push_back(state);
+                }
+            }
+        }
+    }
+
+    reeb
 }
