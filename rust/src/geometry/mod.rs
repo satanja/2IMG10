@@ -88,14 +88,16 @@ pub fn smallest_disk(
     }
 
     let p = enclosing[len - 1];
-    if let Some(d) = smallest_disk(&enclosing, &mut boundary.clone(), len - 1) {
+    if let Some(d) = smallest_disk(&enclosing, boundary, len - 1) {
         if d.contains_point(&p) {
             return Some(d);
         }
     }
 
     boundary.push(p);
-    return smallest_disk(&enclosing, boundary, len - 1);
+    let result = smallest_disk(&enclosing, boundary, len - 1);
+    boundary.pop();
+    result
 }
 
 #[cfg(test)]
