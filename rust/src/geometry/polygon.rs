@@ -5,6 +5,8 @@ use geo::point;
 use geo::prelude::Centroid;
 use geo::LineString;
 use geo::Point;
+use rand::thread_rng;
+use rand::seq::SliceRandom;
 
 use crate::geometry::smallest_disk;
 
@@ -74,8 +76,12 @@ impl Polygon {
     /// Returns the smallest enclosing disk of the vertices
     pub fn smallest_disk_centroid(&self) -> Option<(f64, f64)> {
         let mut enclosing = self.vertices.clone();
+        enclosing.shuffle(&mut thread_rng());
+        let len = enclosing.len();
+
         let mut boundary = Vec::new();
-        match smallest_disk(&mut enclosing, &mut boundary) {
+
+        match smallest_disk(&enclosing, &mut boundary, len) {
             Some(disk) => Some(disk.centroid()),
             None => None,
         }

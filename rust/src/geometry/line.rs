@@ -35,41 +35,6 @@ impl Line {
         }
     }
 
-    pub fn evaluate(&self, x: f64) -> Option<f64> {
-        if let Some(a) = self.slope {
-            Some(a * x + self.intercept.unwrap())
-        } else {
-            if x == self.contact.0 {
-                Some(x)
-            } else {
-                None
-            }
-        }
-    }
-
-    pub fn intersection(&self, other: &Self) -> Option<(f64, f64)> {
-        if let Some(a1) = self.slope {
-            if let Some(a2) = other.slope {
-                let b1 = self.intercept.unwrap();
-                let b2 = other.intercept.unwrap();
-
-                let x = (b2 - b1) / (a1 - a2);
-                let y = self.evaluate(x).unwrap();
-
-                Some((x, y))
-            } else {
-                other.intersection(&self)
-            }
-        } else {
-            let x = self.contact.0;
-            if let Some(y) = other.evaluate(x) {
-                Some((x, y))
-            } else {
-                None
-            }
-        }
-    }
-
     pub fn is_overlapping_with(&self, other: &Self) -> bool {
         if let Some(a1) = self.slope {
             if let Some(a2) = other.slope {
@@ -82,22 +47,6 @@ impl Line {
                 other.is_overlapping_with(&self)
             } else {
                 self.contact.0 == other.contact.0
-            }
-        }
-    }
-
-    pub fn is_parallel_to(&self, other: &Self) -> bool {
-        if let Some(a1) = self.slope {
-            if let Some(a2) = other.slope {
-                a1 == a2
-            } else {
-                false
-            }
-        } else {
-            if let Some(_) = other.slope {
-                other.is_parallel_to(&self)
-            } else {
-                true
             }
         }
     }
