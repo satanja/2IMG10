@@ -15,12 +15,6 @@ struct Opt {
     #[structopt(short, long, default_value = "1e2")]
     delta: f64,
 
-    #[structopt(short, long, default_value = "0")]
-    start_time: usize,
-
-    #[structopt(short, long, default_value = "662")]
-    end_time: usize,
-
     #[structopt(short, long, parse(from_os_str), default_value = "networks/")]
     input_dir: PathBuf,
 
