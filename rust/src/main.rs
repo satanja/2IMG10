@@ -96,8 +96,8 @@ fn compute_reeb_graph(
     method: i32,
 ) -> ReebGraph {
     let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
-    if start_time >= inputs.len() + 1 {
-        println!("Start time too large, specify a number between 1 and {}", inputs.len() + 1);
+    if start_time >= inputs.len() {
+        println!("Start time too large, specify a number between 0 and {}", inputs.len() - 1);
         return reeb
     }
 
