@@ -35,7 +35,6 @@ struct Opt {
 }
 
 fn main() {
-    println!("Loading networks and constructing data structures...");
     let opt = Opt::from_args();
 
     let delta = opt.delta;
@@ -166,7 +165,6 @@ fn compute_reeb_graph(
         index,
     }) = queue.pop_front()
     {
-        println!("{}", next_layer);
         if next_layer == inputs.len() {
             continue;
         }
