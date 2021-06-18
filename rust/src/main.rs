@@ -15,6 +15,9 @@ struct Opt {
     #[structopt(short, long, default_value = "1e2")]
     delta: f64,
 
+    #[structopt(short, long, default_value = "0")]
+    start_time: usize,
+
     #[structopt(short, long, parse(from_os_str), default_value = "networks/")]
     input_dir: PathBuf,
 
@@ -60,11 +63,11 @@ fn main() {
         }
         "centroid" => {
             println!("Using the polygonal centroid algorithm");
-            compute_reeb_graph(inputs, delta, (opt.x, opt.y), 0);
+            compute_reeb_graph(inputs, delta, (opt.x, opt.y), opt.start_time, 0);
         }
         "disk" => {
             println!("Using the smallest enclosing disk centroid algorithm");
-            compute_reeb_graph(inputs, delta, (opt.x, opt.y), 1);
+            compute_reeb_graph(inputs, delta, (opt.x, opt.y), opt.start_time, 1);
         }
         _ => println!("Algorithm not found."),
     }
@@ -89,20 +92,26 @@ fn compute_reeb_graph(
     inputs: Vec<Result<DirEntry, Error>>,
     delta: f64,
     start_point: (f64, f64),
+    start_time: usize,
     method: i32,
 ) -> ReebGraph {
     let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
+    if start_time >= inputs.len() + 1 {
+        println!("Start time too large, specify a number between 1 and {}", inputs.len() + 1);
+        return reeb
+    }
+
     let mut start_layer = 0;
 
     let mut found = false;
     let mut index = 0;
 
-    let input = inputs[0].as_ref();
+    let input = inputs[start_time].as_ref();
     let mut islands = io::read_network(delta, &input.unwrap().path())
         .unwrap()
         .polygons();
 
-    'search_loop: for layer in 0..inputs.len() {
+    'search_loop: for layer in start_time..inputs.len() {
         for j in 0..islands.len() {
             let island = &islands[j];
             if island.contains(&start_point) {
