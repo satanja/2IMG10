@@ -84,7 +84,7 @@ pub fn smallest_disk(
     len: usize,
 ) -> Option<Disk> {
     if len == 0 || boundary.len() == 3 {
-        return trivial_disk(boundary)
+        return trivial_disk(boundary);
     }
 
     let p = enclosing[len - 1];

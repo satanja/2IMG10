@@ -5,8 +5,8 @@ use geo::point;
 use geo::prelude::Centroid;
 use geo::LineString;
 use geo::Point;
-use rand::thread_rng;
 use rand::seq::SliceRandom;
+use rand::thread_rng;
 
 use crate::geometry::smallest_disk;
 
