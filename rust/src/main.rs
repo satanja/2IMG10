@@ -63,11 +63,11 @@ fn main() {
         }
         "centroid" => {
             println!("Using the polygonal centroid algorithm");
-            compute_reeb_graph(inputs, delta, (opt.x, opt.y), opt.start_time, 0);
+            compute_reeb_graph(inputs, delta, (opt.x, opt.y), opt.start_time, 0).unwrap().to_ipe();
         }
         "disk" => {
             println!("Using the smallest enclosing disk centroid algorithm");
-            compute_reeb_graph(inputs, delta, (opt.x, opt.y), opt.start_time, 1);
+            compute_reeb_graph(inputs, delta, (opt.x, opt.y), opt.start_time, 1).unwrap().to_ipe();
         }
         _ => println!("Algorithm not found."),
     }
@@ -94,11 +94,10 @@ fn compute_reeb_graph(
     start_point: (f64, f64),
     start_time: usize,
     method: i32,
-) -> ReebGraph {
-    let mut reeb = ReebGraph::new(&CriticalPoint::new(0));
+) -> Option<ReebGraph> {
     if start_time >= inputs.len() {
         println!("Start time too large, specify a number between 0 and {}", inputs.len() - 1);
-        return reeb
+        return None
     }
 
     let mut start_layer = 0;
@@ -132,8 +131,10 @@ fn compute_reeb_graph(
 
     if !found {
         println!("Island containing {:?} not found", start_point);
-        return reeb;
+        return None;
     }
+
+    let mut reeb = ReebGraph::new(&CriticalPoint::new(0), start_point.0 as i32, start_layer);
 
     let mut queue = VecDeque::new();
     queue.push_back(State {
@@ -202,7 +203,7 @@ fn compute_reeb_graph(
             let old_contains_new = old_islands[index].contains(&new_centroid); // if so: split or normal
             let new_contains_old = new_islands[poly_new].contains(&old_centroid); // if so: merge or normal
             if old_contains_new || new_contains_old {
-                reeb.add_point(&CriticalPoint::new(parent_id), &CriticalPoint::new(id));
+                reeb.add_point(layer, &CriticalPoint::new(parent_id), &CriticalPoint::new(id), old_centroid.0 as i32);
 
                 let state = State {
                     index: poly_new,
@@ -219,5 +220,5 @@ fn compute_reeb_graph(
         }
     }
 
-    reeb
+    return Some(reeb);
 }
