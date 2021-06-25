@@ -134,7 +134,7 @@ fn compute_reeb_graph(
         return None;
     }
 
-    let mut reeb = ReebGraph::new(&CriticalPoint::new(0), start_point.0 as i32, start_layer);
+    let mut reeb = ReebGraph::new(&CriticalPoint::new(0), start_point.0, start_layer as i32);
 
     let mut queue = VecDeque::new();
     queue.push_back(State {
@@ -203,7 +203,7 @@ fn compute_reeb_graph(
             let old_contains_new = old_islands[index].contains(&new_centroid); // if so: split or normal
             let new_contains_old = new_islands[poly_new].contains(&old_centroid); // if so: merge or normal
             if old_contains_new || new_contains_old {
-                reeb.add_point(layer, &CriticalPoint::new(parent_id), &CriticalPoint::new(id), old_centroid.0 as i32);
+                reeb.add_point(layer as i32, &CriticalPoint::new(parent_id as i32), &CriticalPoint::new(id as i32), new_centroid.0);
 
                 let state = State {
                     index: poly_new,
