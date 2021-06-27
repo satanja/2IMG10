@@ -15,7 +15,8 @@ impl CriticalPoint {
 pub struct ReebGraph {
     slices: FxHashMap<i32, FxHashMap<CriticalPoint, Vec<CriticalPoint>>>,
     x_coords: FxHashMap<CriticalPoint, f64>,
-    degrees: FxHashMap<CriticalPoint, i32>,
+    indegrees: FxHashMap<CriticalPoint, i32>,
+    outdegrees: FxHashMap<CriticalPoint, i32>,
     root: CriticalPoint
 }
 
@@ -25,12 +26,14 @@ impl ReebGraph {
         let mut root_map = FxHashMap::default();
         let mut edges = FxHashMap::default();
         let mut x_map = FxHashMap::default();
-        let mut deg = FxHashMap::default();
+        let mut indeg = FxHashMap::default();
+        let mut outdeg = FxHashMap::default();
         edges.insert(root.clone(), Vec::new());
         root_map.insert(layer, edges);
         x_map.insert(root.clone(), x);
-        deg.insert(root.clone(), 1);
-        ReebGraph { slices: root_map, x_coords: x_map, degrees: deg, root: root.clone() }
+        indeg.insert(root.clone(), 0);
+        outdeg.insert(root.clone(), 1);
+        ReebGraph { slices: root_map, x_coords: x_map, indegrees: indeg, outdegrees: outdeg, root: root.clone() }
     }
 
     /// Joins a parent to a new critical point `point` and creates a new entry for `point`
@@ -67,21 +70,36 @@ impl ReebGraph {
             }
         }
 
-        match self.degrees.get_mut(&point.clone()) {
+        match self.indegrees.get_mut(&point.clone()) {
             Some(d) => {
                 *d += 1;
             }
             None => {
-                self.degrees.insert(point.clone(), 1);
+                self.indegrees.insert(point.clone(), 1);
             }
         }
 
-        match self.degrees.get_mut(&parent.clone()) {
+        match self.indegrees.get_mut(&parent.clone()) {
+            Some(_) => {}
+            None => {
+                self.indegrees.insert(parent.clone(), 0);
+            }
+        }
+
+
+        match self.outdegrees.get_mut(&parent.clone()) {
             Some(d) => {
                 *d += 1;
             }
             None => {
-                self.degrees.insert(parent.clone(), 1);
+                self.outdegrees.insert(parent.clone(), 1);
+            }
+        }
+
+        match self.outdegrees.get_mut(&point.clone()) {
+            Some(_) => {}
+            None => {
+                self.outdegrees.insert(point.clone(), 0);
             }
         }
     }
@@ -100,7 +118,7 @@ impl ReebGraph {
                     println!("{} {} l", child_x, y + Y_SCALE);
                     println!("h");
                     println!("</path>");
-                    if *self.degrees.get(child).unwrap() != 2 {
+                    if *self.indegrees.get(child).unwrap() != 1 || *self.outdegrees.get(child).unwrap() != 1 {
                         println!("<use name=\"mark/disk(sx)\" pos=\"{} {}\" size=\"normal\" stroke=\"black\"/>", child_x, y + Y_SCALE);
                     }
                 }
